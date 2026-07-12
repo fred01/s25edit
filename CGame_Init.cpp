@@ -14,7 +14,7 @@
 #include <glad/glad.h>
 #include <iostream>
 
-bool CGame::CreateWindow()
+bool CGame::CreateWindowAndGLContext()
 {
     if(window_)
         return false;
@@ -133,7 +133,7 @@ bool CGame::Init()
     SDL_ShowCursor(SDL_DISABLE);
 
     std::cout << "Create Window...";
-    if(!CreateWindow())
+    if(!CreateWindowAndGLContext())
     {
         std::cout << "failure";
         return false;

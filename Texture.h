@@ -68,4 +68,4 @@ void drawButtonBox(const Rect& area, bool pressed, unsigned baseTex, unsigned fa
 /// Get or create the cached OpenGL texture for a bitmap index.
 /// The texture is loaded from the SDL surface on first access.
 /// @param filterLinear Whether to use linear filtering (for scaled backgrounds).
-Texture& getBmpTexture(int idx, bool filterLinear = false);
+Texture& getBmpTexture(unsigned idx, bool filterLinear = false);
