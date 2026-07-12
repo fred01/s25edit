@@ -101,7 +101,7 @@ void CGame::ApplyWindowChanges()
     UpdateDisplaySize(GameResolution);
 }
 
-void CGame::setGLViewport()
+void CGame::setGLViewport() // NOLINT(readability-make-member-function-const)
 {
     if(!window_)
         return;

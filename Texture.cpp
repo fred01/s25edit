@@ -54,7 +54,7 @@ void Texture::createEmpty(Extent size, bool filterLinear)
     load(nullptr, size, filterLinear);
 }
 
-void Texture::upload(const void* bgraPixels)
+void Texture::upload(const void* bgraPixels) // NOLINT(readability-make-member-function-const)
 {
     if(!texture_)
         return;

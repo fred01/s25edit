@@ -2038,15 +2038,17 @@ void CMap::modifyBuild(Position pos)
 
     if(danger)
         building = 0x00;
-    else if(mineHits == 6)
-        building = 0x05;
-    else if(buildingHits == 6)
-        building = 0x04;
-    else if(buildingHits || mineHits || flagHits)
-        building = 0x01;
     else
-        building = 0x00;
-
+    {
+        if(mineHits == 6)
+            building = 0x05;
+        else if(buildingHits == 6)
+            building = 0x04;
+        else if(buildingHits || mineHits || flagHits)
+            building = 0x01;
+        else
+            building = 0x00;
+    }
     // Now reduce BQ based on altitude (matching s25client altitude checks)
     if(building == 0x04) // Castle
     {

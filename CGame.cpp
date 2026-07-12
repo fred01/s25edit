@@ -236,7 +236,7 @@ BOOL WINAPI ConsoleSignalHandler(DWORD dwCtrlType)
     return FALSE;
 }
 #else
-static bool killme = false;
+bool killme = false;
 void ConsoleSignalHandler(int /*sig*/)
 {
     if(!killme)
