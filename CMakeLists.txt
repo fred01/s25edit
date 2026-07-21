@@ -1,13 +1,13 @@
 # Copyright (C) 2009 - 2021 Marc Vester (XaserLE)
-# Copyright (C) 2009 - 2025 Settlers Freaks <sf-team at siedler25.org>
+# Copyright (C) 2009 - 2026 Settlers Freaks <sf-team at siedler25.org>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-cmake_minimum_required(VERSION 3.16..3.20)
+cmake_minimum_required(VERSION 3.16..3.31)
 
 project(s25edit)
 
-find_package(Boost 1.64 REQUIRED)
+find_package(Boost 1.71 REQUIRED)
 
 add_subdirectory(SGE)
 
