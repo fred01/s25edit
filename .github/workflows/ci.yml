@@ -1,8 +1,6 @@
 # Copyright (C) 2026 Settlers Freaks <sf-team at siedler25.org>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-#
-# CI for s25edit.
 
 name: CI
 
@@ -11,7 +9,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ format('s25edit-{0}:{1}', github.repository, github.ref) }}
+  group: ${{ format('{0}:{1}', github.repository, github.ref) }}
   cancel-in-progress: true
 
 jobs:
@@ -19,7 +17,7 @@ jobs:
     name: Static analysis
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install REUSE
         run: |
@@ -41,3 +39,69 @@ jobs:
 
       - name: Check licensing (REUSE)
         run: reuse lint
+
+  build:
+    runs-on: ${{matrix.os}}-${{matrix.os_version}}
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu,  os_version: 22.04, toolset: gcc,   boost: 1.78.0, generator: 'Unix Makefiles' }
+          - { os: ubuntu,  os_version: 24.04, toolset: gcc,   boost: 1.91.0, generator: 'Unix Makefiles' }
+          - { os: macos,   os_version: 15,    toolset: clang, boost: 1.86.0, generator: 'Unix Makefiles' }
+          - { os: windows, os_version: 2022,  toolset: msvc,  boost: 1.78.0, generator: 'Visual Studio 17 2022' }
+          - { os: windows, os_version: 2025,  toolset: msvc,  boost: 1.91.0, generator: 'Visual Studio 18 2026' }
+
+    steps:
+      - name: Checkout super project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Return-To-The-Roots/s25client
+          ref: master
+          submodules: true
+      - name: Checkout editor
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: external/s25edit
+
+      - name: Install system packages
+        if: "!startsWith(runner.os, 'Windows')"
+        run: |
+          if [[ "$RUNNER_OS" =~ macOS ]]; then
+            echo "HOMEBREW_PREFIX=$HOMEBREW_PREFIX"
+            echo "HOMEBREW_CELLAR=$HOMEBREW_CELLAR"
+            brew install cmake sdl2 sdl2_mixer gettext miniupnpc
+          else
+            compiler=${{matrix.compiler}}
+            compiler=${compiler/gcc-/g++-}
+            sudo apt-get -o Acquire::Retries=5 update
+            sudo apt-get -o Acquire::Retries=5 -y -q --no-install-suggests --no-install-recommends install gettext libsdl2-dev libsdl2-mixer-dev libcurl4-openssl-dev libbz2-dev libminiupnpc-dev liblua5.2-dev $compiler
+          fi
+
+      - name: Install boost
+        uses: MarkusJx/install-boost@f9d34f6fe427b8f2ae424d7bf2a3ebccb0dae5a3  # v2.6.0
+        id: install-boost
+        with:
+          boost_version: ${{matrix.boost}}
+          platform_version: ${{matrix.os_version}}
+          boost_install_dir: contrib
+          toolset: ${{matrix.toolset}}
+          link: static
+          arch: ${{ (matrix.os == 'macos') && 'aarch64' || 'x86' }}
+
+      - name: Setup CCache
+        if: "!startsWith(runner.os, 'Windows')"
+        uses: hendrikmuhs/ccache-action@33522472633dbd32578e909b315f5ee43ba878ce # v1.2.22
+        with:
+          key: ${{matrix.os}}-${{matrix.os_version}}-${{matrix.toolset}}-${{matrix.boost}}
+          max-size: 200M
+
+      - name: Configure
+        env:
+          BOOST_ROOT: ${{steps.install-boost.outputs.BOOST_ROOT}}
+        run: |
+          mkdir build_dir
+          cd build_dir
+          echo "Configuring ${{matrix.generator}}"
+          cmake -G "${{matrix.generator}}" -DCMAKE_BUILD_TYPE=Debug -DRTTR_ENABLE_WERROR=ON -DRTTR_USE_STATIC_BOOST=ON -DRTTR_EXTERNAL_BUILD_TESTING=ON -DRTTR_INCLUDE_DEVTOOLS=ON ..
+      - name: Build
+        run: cmake --build build_dir --config Debug --parallel 4 --target s25edit
