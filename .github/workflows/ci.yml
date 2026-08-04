@@ -102,6 +102,6 @@ jobs:
           mkdir build_dir
           cd build_dir
           echo "Configuring ${{matrix.generator}}"
-          cmake -G "${{matrix.generator}}" -DCMAKE_BUILD_TYPE=Debug -DRTTR_ENABLE_WERROR=ON -DRTTR_USE_STATIC_BOOST=ON -DRTTR_EXTERNAL_BUILD_TESTING=ON -DRTTR_INCLUDE_DEVTOOLS=ON ..
+          cmake -G "${{matrix.generator}}" -DCMAKE_BUILD_TYPE=Debug -DRTTR_ENABLE_WERROR=ON -DRTTR_USE_STATIC_BOOST=ON -DRTTR_EXTERNAL_BUILD_TESTING=ON -DRTTR_INCLUDE_DEVTOOLS=ON -DBoost_VERBOSE=ON ..
       - name: Build
         run: cmake --build build_dir --config Debug --parallel 4 --target s25edit
