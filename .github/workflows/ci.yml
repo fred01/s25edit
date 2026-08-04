@@ -49,7 +49,7 @@ jobs:
           - { os: ubuntu,  os_version: 24.04, toolset: gcc,   boost: 1.91.0, generator: 'Unix Makefiles' }
           - { os: macos,   os_version: 15,    toolset: clang, boost: 1.86.0, generator: 'Unix Makefiles' }
           - { os: windows, os_version: 2022,  toolset: msvc,  boost: 1.78.0, generator: 'Visual Studio 17 2022' }
-          - { os: windows, os_version: 2025,  toolset: msvc,  boost: 1.91.0, generator: 'Visual Studio 18 2026' }
+          - { os: windows, os_version: 2025,  toolset: msvc,  boost: 1.91.0, generator: 'Visual Studio 18 2026', cmake_flags: '-DBoost_COMPILER=vc143' }
 
     steps:
       - name: Checkout super project
@@ -102,6 +102,6 @@ jobs:
           mkdir build_dir
           cd build_dir
           echo "Configuring ${{matrix.generator}}"
-          cmake -G "${{matrix.generator}}" -DCMAKE_BUILD_TYPE=Debug -DRTTR_ENABLE_WERROR=ON -DRTTR_USE_STATIC_BOOST=ON -DRTTR_EXTERNAL_BUILD_TESTING=ON -DRTTR_INCLUDE_DEVTOOLS=ON -DBoost_VERBOSE=ON ..
+          cmake -G "${{matrix.generator}}" ${{matrix.cmake_flags}} -DCMAKE_BUILD_TYPE=Debug -DRTTR_ENABLE_WERROR=ON -DRTTR_USE_STATIC_BOOST=ON -DRTTR_EXTERNAL_BUILD_TESTING=ON -DRTTR_INCLUDE_DEVTOOLS=ON -DBoost_VERBOSE=ON ..
       - name: Build
         run: cmake --build build_dir --config Debug --parallel 4 --target s25edit
