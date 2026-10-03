@@ -71,9 +71,9 @@ constexpr std::array<LandscapeObject, 54> landscapeObjects{{
   {0x2D, "Ruined guardhouse", MIS2BOBS_GUARDHOUSE, true},
   {0x2E, "Ruined watchtower", MIS2BOBS_GUARDTOWER, true},
   {0x2F, "Ruined fortress", MIS2BOBS_FORTRESS, true},
-  {0x30, "Grave cross", MIS2BOBS_PUPPY, true},
+  {0x30, "Scarecrow with spears", MIS2BOBS_PUPPY, true},
   {0x31, "Viking with boat", MIS3BOBS_VIKING, true},
-  {0x32, "Pile of wood", MIS4BOBS_SCROLLS, true},
+  {0x32, "Pile of scrolls", MIS4BOBS_SCROLLS, true},
   {0x33, "Whale skeleton", MIS5BOBS_SKELETON1, true},
   // The next 2 objects are not available in the original game, only in s25client
   {0x34, "Whale skeleton 2 (RTTR)", MIS5BOBS_SKELETON2, true},

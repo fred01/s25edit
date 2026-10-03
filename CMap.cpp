@@ -14,6 +14,7 @@
 #include "landscapeObjects.h"
 #include "gameData/LandscapeDesc.h"
 #include "gameData/TerrainDesc.h"
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -1073,6 +1074,38 @@ Position CMap::correctMouseBlit(Position vertexPos) const
     return newBlit;
 }
 
+namespace {
+/// Cycle the animated colors of the open gateway like s25client does (Loader::LoadFiles, "gateway animation")
+void animateOpenGateway()
+{
+    // colors 248 - 251 of PAL5.BBM, which s25client uses for the gateway on all map types
+    constexpr Uint8 firstColorIdx = 248;
+    constexpr std::array<SDL_Color, 4> gatewayColors{
+      {{167, 59, 11, 255}, {191, 103, 7, 255}, {215, 159, 0, 255}, {191, 103, 7, 255}}};
+    // a full cycle takes 630ms * 5 / 4 like GameClient::GetGlobalAnimation(4, 5, 4, 0)
+    constexpr unsigned cycleDuration = 630 * 5 / 4;
+
+    SDL_Surface* surface = global::bmpArray[MAPPIC_DOOR_OPEN].surface.get();
+    if(!surface || !surface->format->palette)
+        return;
+    const unsigned frame = (SDL_GetTicks() % cycleDuration) * gatewayColors.size() / cycleDuration;
+    std::array<SDL_Color, gatewayColors.size()> colors;
+    for(unsigned i = 0; i < colors.size(); i++)
+        colors[i] = gatewayColors[(i + frame + 1) % gatewayColors.size()];
+
+    // nothing to do if the palette already shows this frame
+    const SDL_Color* curColors = &surface->format->palette->colors[firstColorIdx];
+    if(std::equal(colors.begin(), colors.end(), curColors, [](const SDL_Color& lhs, const SDL_Color& rhs) {
+           return lhs.r == rhs.r && lhs.g == rhs.g && lhs.b == rhs.b;
+       }))
+        return;
+
+    SDL_SetPaletteColors(surface->format->palette, colors.data(), firstColorIdx, colors.size());
+    // update the preview in the landscape objects window
+    resetBmpTextures(MAPPIC_DOOR_OPEN, MAPPIC_DOOR_OPEN);
+}
+} // namespace
+
 void CMap::render()
 {
     // check if game resolution has been changed
@@ -1099,6 +1132,7 @@ void CMap::render()
     if(modify)
         modifyVertex();
 
+    animateOpenGateway();
     if(!map->vertex.empty())
         CSurface::DrawTriangleField(Surf_Map.get(), displayRect, *map);
 
