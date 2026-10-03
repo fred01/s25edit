@@ -29,6 +29,7 @@ void EditorTextureMenu(int Param);
 void EditorTreeMenu(int Param);
 void EditorResourceMenu(int Param);
 void EditorLandscapeMenu(int Param);
+void EditorLandscapeObjectMenu(int Param);
 void EditorAnimalMenu(int Param);
 void EditorPlayerMenu(int Param);
 void EditorCreateMenu(int Param);

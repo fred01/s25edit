@@ -1087,6 +1087,7 @@ enum
     MAPPIC_SHRUB7,
     MAPPIC_SNOWMAN,
     MAPPIC_DOOR,
+    MAPPIC_DOOR_OPEN,
     // some pictures missing here
     MAPPIC_LAST_ENTRY = 1432 + 2070
     // END: /DATA/MAP00.LST
@@ -1190,7 +1191,9 @@ enum
     EDITOR_MODE_FLAG_DELETE,
     EDITOR_MODE_RESOURCE_RAISE,
     EDITOR_MODE_RESOURCE_REDUCE,
-    EDITOR_MODE_ANIMAL
+    EDITOR_MODE_ANIMAL,
+    // place exactly the landscape object given by modeContent (objectInfo 0xC8)
+    EDITOR_MODE_LANDSCAPE_OBJECT
 };
 
 // maximum range for the cursor in editor mode (user can increase or decrease by pressing '+' or '-') --> Must be >= 0.

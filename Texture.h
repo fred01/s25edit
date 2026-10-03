@@ -69,3 +69,5 @@ void drawButtonBox(const Rect& area, bool pressed, unsigned baseTex, unsigned fa
 /// The texture is loaded from the SDL surface on first access.
 /// @param filterLinear Whether to use linear filtering (for scaled backgrounds).
 Texture& getBmpTexture(unsigned idx, bool filterLinear = false);
+/// Release the cached textures of the bitmap indices [firstIdx, lastIdx], e.g. when their surfaces get reloaded.
+void resetBmpTextures(unsigned firstIdx, unsigned lastIdx);

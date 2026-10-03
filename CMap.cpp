@@ -8,8 +8,10 @@
 #include "CIO/CFile.h"
 #include "CIO/CFont.h"
 #include "CSurface.h"
+#include "Texture.h"
 #include "callbacks.h"
 #include "globals.h"
+#include "landscapeObjects.h"
 #include "gameData/LandscapeDesc.h"
 #include "gameData/TerrainDesc.h"
 #include <cassert>
@@ -468,6 +470,7 @@ void CMap::unloadMapPics()
     {
         global::bmpArray[i].surface.reset();
     }
+    resetBmpTextures(MAPPIC_ARROWCROSS_YELLOW, MAPPIC_LAST_ENTRY);
     // set back bmpArray-pointer, cause MAP0x.LST is no longer needed
     CFile::set_bmpArray(&global::bmpArray[MAPPIC_ARROWCROSS_YELLOW]);
     // set back palArray-pointer, cause PALx.BBM is no longer needed
@@ -1114,7 +1117,8 @@ void CMap::render()
         case EDITOR_MODE_HEIGHT_MAKE_BIG_HOUSE: symbol_index = MAPPIC_ARROWCROSS_RED_HOUSE_BIG; break;
         case EDITOR_MODE_TEXTURE: symbol_index = CURSOR_SYMBOL_TEXTURE; break;
         case EDITOR_MODE_TEXTURE_MAKE_HARBOUR: symbol_index = MAPPIC_ARROWCROSS_RED_HOUSE_HARBOUR; break;
-        case EDITOR_MODE_LANDSCAPE: symbol_index = CURSOR_SYMBOL_LANDSCAPE; break;
+        case EDITOR_MODE_LANDSCAPE:
+        case EDITOR_MODE_LANDSCAPE_OBJECT: symbol_index = CURSOR_SYMBOL_LANDSCAPE; break;
         case EDITOR_MODE_FLAG:
         case EDITOR_MODE_FLAG_DELETE: symbol_index = CURSOR_SYMBOL_FLAG; break;
         case EDITOR_MODE_RESOURCE_REDUCE: symbol_index = CURSOR_SYMBOL_PICKAXE_MINUS; break;
@@ -1444,7 +1448,7 @@ void CMap::modifyVertex()
         for(int i = 0; i < VertexCounter; i++)
             if(Vertices[i].active)
                 modifyObject(Vertices[i]);
-    } else if(mode == EDITOR_MODE_LANDSCAPE)
+    } else if(mode == EDITOR_MODE_LANDSCAPE || mode == EDITOR_MODE_LANDSCAPE_OBJECT)
     {
         for(int i = 0; i < VertexCounter; i++)
             if(Vertices[i].active)
@@ -1813,9 +1817,25 @@ void CMap::modifyTextureMakeHarbour(Position pos)
     }
 }
 
+bool CMap::isPartOfRuinedFortress(Position pos)
+{
+    const auto isRuinedFortress = [this](Position pt) {
+        const MapNode& vertex = map->getVertex(pt);
+        return vertex.objectInfo == LANDSCAPE_OBJECT_INFO && vertex.objectType == LANDSCAPE_OBJECT_RUINED_FORTRESS;
+    };
+    // the fortress must be east, south east or south west of the vertex
+    std::array<Point32, 7> around;
+    calculateVerticesAround(around, pos);
+    return isRuinedFortress(around[4]) || isRuinedFortress(around[5]) || isRuinedFortress(around[6]);
+}
+
 void CMap::modifyObject(Position pos)
 {
     MapNode& curVertex = map->getVertex(pos.x, pos.y);
+    // s25client would remove objects placed there
+    if(mode != EDITOR_MODE_CUT && isPartOfRuinedFortress(pos))
+        return;
+
     if(mode == EDITOR_MODE_CUT)
     {
         // prevent cutting a player position
@@ -1968,6 +1988,29 @@ void CMap::modifyObject(Position pos)
         {
             curVertex.objectType = modeContent;
             curVertex.objectInfo = modeContent2;
+        }
+    } else if(mode == EDITOR_MODE_LANDSCAPE_OBJECT)
+    {
+        // if there is another object at the vertex, return
+        if(curVertex.objectInfo != 0x00)
+            return;
+
+        if(modeContent == LANDSCAPE_OBJECT_RUINED_FORTRESS)
+        {
+            // the vertices west, north west and north east must be free
+            std::array<Point32, 7> around;
+            calculateVerticesAround(around, pos);
+            for(const int i : {1, 2, 3})
+            {
+                if(map->getVertex(around[i]).objectInfo != 0x00 || isPartOfRuinedFortress(around[i]))
+                    return;
+            }
+        }
+
+        if(findLandscapeObject(modeContent))
+        {
+            curVertex.objectType = modeContent;
+            curVertex.objectInfo = LANDSCAPE_OBJECT_INFO;
         }
     }
     // at least setup the possible building at the vertex and 1 section around
@@ -2128,6 +2171,25 @@ void CMap::modifyBuild(Position pos)
         )
         {
             building = 0x00;
+        }
+    }
+
+    // test for landscape objects that block building like in s25client (noStaticObject)
+    const auto isBlockingObject = [](const MapNode& vertex) {
+        if(vertex.objectInfo != LANDSCAPE_OBJECT_INFO)
+            return false;
+        const LandscapeObject* obj = findLandscapeObject(vertex.objectType);
+        return obj && obj->blocking;
+    };
+    if(building > 0x00 && (isBlockingObject(curVertex) || isPartOfRuinedFortress(pos)))
+        building = 0x00;
+    // castles need non-blocking objects at the extension points (west, north west and north east)
+    if(building == 0x04)
+    {
+        for(const int i : {1, 2, 3})
+        {
+            if(isBlockingObject(*mapVertices[i]) || isPartOfRuinedFortress(tempVertices[i]))
+                building = 0x03;
         }
     }
 

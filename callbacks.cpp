@@ -20,6 +20,7 @@
 #include "CollisionDetection.h"
 #include "globals.h"
 #include "helpers/format.hpp"
+#include "landscapeObjects.h"
 #include "s25util/strAlgos.h"
 #include <glad/glad.h>
 #include <boost/filesystem.hpp>
@@ -1490,7 +1491,8 @@ void callback::EditorLandscapeMenu(int Param)
         PICBONE,
         PICMUSHROOM,
         PICSTALAGMITE,
-        PICFLOWERS
+        PICFLOWERS,
+        BUTTONOBJECTS
     };
 
     if(Param != INITIALIZING_CALL && Param != MAP_QUIT)
@@ -1559,6 +1561,8 @@ void callback::EditorLandscapeMenu(int Param)
                 default: // should not happen
                     break;
             }
+            WNDLandscape->addButton(EditorLandscapeMenu, BUTTONOBJECTS, Position(36, 107), Extent(68, 20),
+                                    BUTTON_GREY, "Objects");
             MapObj->setMode(EDITOR_MODE_LANDSCAPE);
             MapObj->setModeContent(0x01);
             MapObj->setModeContent2(0xCC);
@@ -1632,6 +1636,7 @@ void callback::EditorLandscapeMenu(int Param)
             lastContent = 0x09;
             lastContent2 = 0xC8;
             break;
+        case BUTTONOBJECTS: EditorLandscapeObjectMenu(INITIALIZING_CALL); break;
 
         case WINDOW_CLICKED_CALL:
             if(MapObj)
@@ -1643,6 +1648,7 @@ void callback::EditorLandscapeMenu(int Param)
             break;
 
         case WINDOWQUIT:
+            EditorLandscapeObjectMenu(MAP_QUIT);
             if(WNDLandscape)
             {
                 Pos = WNDLandscape->getPos();
@@ -1660,6 +1666,7 @@ void callback::EditorLandscapeMenu(int Param)
 
         case MAP_QUIT:
             // we do the same like in case WINDOWQUIT, but we won't setMode(EDITOR_MODE_HEIGHT_RAISE), cause map is dead
+            EditorLandscapeObjectMenu(MAP_QUIT);
             if(WNDLandscape)
             {
                 Pos = WNDLandscape->getPos();
@@ -1673,6 +1680,129 @@ void callback::EditorLandscapeMenu(int Param)
             break;
 
         default: break;
+    }
+}
+
+void callback::EditorLandscapeObjectMenu(int Param)
+{
+    static CWindow* WNDObjects = nullptr;
+    static CMap* MapObj = nullptr;
+    static std::vector<CFont*> ObjectTexts;
+    static CFont* NameText = nullptr;
+    static int PreviewPicture = -1;
+    static Position PreviewPos;
+    static Extent PreviewSize;
+    static int lastContent = 0x00;
+    static Position Pos{390, 180};
+
+    constexpr FontSize fontSize = FontSize::Small;
+    constexpr unsigned numColumns = 2;
+
+    enum
+    {
+        WINDOWQUIT,
+        OBJECT_FIRST // OBJECT_FIRST + objectType
+    };
+
+    if(Param != INITIALIZING_CALL && Param != MAP_QUIT)
+        assert(WNDObjects && MapObj);
+
+    const auto selectObject = [](Uint8 objectType) {
+        for(unsigned i = 0; i < ObjectTexts.size(); i++)
+            ObjectTexts[i]->setColor(i == objectType ? FontColor::Red : FontColor::Yellow);
+        const LandscapeObject& obj = landscapeObjects[objectType];
+        NameText->setText(obj.name);
+        WNDObjects->delStaticPicture(PreviewPicture);
+        // center the picture in the preview area
+        const auto& bmp = global::bmpArray[obj.picture];
+        const Position offset((static_cast<int>(PreviewSize.x) - bmp.w) / 2,
+                              (static_cast<int>(PreviewSize.y) - bmp.h) / 2);
+        PreviewPicture = WNDObjects->addStaticPicture(PreviewPos + elMax(offset, Position(0, 0)), obj.picture);
+        MapObj->setMode(EDITOR_MODE_LANDSCAPE_OBJECT);
+        MapObj->setModeContent(objectType);
+        MapObj->setModeContent2(LANDSCAPE_OBJECT_INFO);
+        lastContent = objectType;
+    };
+
+    switch(Param)
+    {
+        case INITIALIZING_CALL:
+        {
+            if(WNDObjects)
+                break;
+            const unsigned lineHeight = getLineHeight(fontSize) + 1;
+            unsigned columnWidth = 0;
+            for(const auto& obj : landscapeObjects)
+                columnWidth = std::max(columnWidth, CFont::getTextWidth(obj.name, fontSize) + 8);
+            const unsigned numRows = (landscapeObjects.size() + numColumns - 1) / numColumns;
+            // big enough for the biggest object picture (ruined fortress)
+            PreviewSize = Extent(124, 104);
+            PreviewPos = Position(4 + numColumns * columnWidth, 4 + lineHeight + 4);
+            const Extent borderSize(global::bmpArray[WINDOW_LEFT_FRAME].w + global::bmpArray[WINDOW_RIGHT_FRAME].w,
+                                    global::bmpArray[WINDOW_UPPER_FRAME].h + global::bmpArray[WINDOW_LOWER_FRAME].h);
+            const Extent contentSize(PreviewPos.x + PreviewSize.x + 4,
+                                     std::max<unsigned>(4 + numRows * lineHeight + 4, PreviewPos.y + PreviewSize.y + 4));
+
+            WNDObjects = global::s2->RegisterWindow(
+              std::make_unique<CWindow>(EditorLandscapeObjectMenu, WINDOWQUIT, Pos, contentSize + borderSize,
+                                        "Landscape objects", WINDOW_GREEN1, WINDOW_CLOSE | WINDOW_MINIMIZE | WINDOW_MOVE));
+            MapObj = global::s2->getMapObj();
+
+            ObjectTexts.clear();
+            for(unsigned i = 0; i < landscapeObjects.size(); i++)
+            {
+                const Position textPos(4 + (i / numRows) * columnWidth, 4 + (i % numRows) * lineHeight);
+                CFont* text = WNDObjects->addText(landscapeObjects[i].name, textPos, fontSize);
+                text->setCallback(EditorLandscapeObjectMenu, OBJECT_FIRST + landscapeObjects[i].objectType);
+                ObjectTexts.push_back(text);
+            }
+            NameText = WNDObjects->addText("", Position(PreviewPos.x, 4), fontSize, FontColor::Red);
+            PreviewPicture = -1;
+            selectObject(lastContent);
+            break;
+        }
+
+        case WINDOW_CLICKED_CALL:
+            if(MapObj)
+            {
+                MapObj->setMode(EDITOR_MODE_LANDSCAPE_OBJECT);
+                MapObj->setModeContent(lastContent);
+                MapObj->setModeContent2(LANDSCAPE_OBJECT_INFO);
+            }
+            break;
+
+        case WINDOWQUIT:
+            if(WNDObjects)
+            {
+                Pos = WNDObjects->getPos();
+                WNDObjects->setWaste();
+                WNDObjects = nullptr;
+            }
+            // go back to the mode of the landscape window
+            EditorLandscapeMenu(WINDOW_CLICKED_CALL);
+            ObjectTexts.clear();
+            NameText = nullptr;
+            MapObj = nullptr;
+            break;
+
+        case MAP_QUIT:
+            // we do the same like in case WINDOWQUIT, but we won't change the mode, cause map is dead or the
+            // landscape window takes care of it
+            if(WNDObjects)
+            {
+                Pos = WNDObjects->getPos();
+                WNDObjects->setWaste();
+                WNDObjects = nullptr;
+            }
+            ObjectTexts.clear();
+            NameText = nullptr;
+            MapObj = nullptr;
+            break;
+
+        default:
+            if(Param >= OBJECT_FIRST && Param < OBJECT_FIRST + static_cast<int>(landscapeObjects.size()))
+                selectObject(static_cast<Uint8>(Param - OBJECT_FIRST));
+            break;
     }
 }
 

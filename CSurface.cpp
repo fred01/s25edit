@@ -10,6 +10,7 @@
 #include "SGE/sge_blib.h"
 #include "SGE/sge_surface.h"
 #include "globals.h"
+#include "landscapeObjects.h"
 #include "gameData/EdgeDesc.h"
 #include "gameData/TerrainDesc.h"
 #include <algorithm>
@@ -1083,49 +1084,9 @@ void CSurface::DrawTriangle(SDL_Surface* display, const DisplayRectangle& displa
                 break;
             // landscape
             case 0xC8:
-                switch(P2.objectType)
-                {
-                    case 0x00: objIdx = MAPPIC_MUSHROOM1; break;
-                    case 0x01: objIdx = MAPPIC_MUSHROOM2; break;
-                    case 0x02: objIdx = MAPPIC_STONE1; break;
-                    case 0x03: objIdx = MAPPIC_STONE2; break;
-                    case 0x04: objIdx = MAPPIC_STONE3; break;
-                    case 0x05: objIdx = MAPPIC_TREE_TRUNK_DEAD; break;
-                    case 0x06: objIdx = MAPPIC_TREE_DEAD; break;
-                    case 0x07: objIdx = MAPPIC_BONE1; break;
-                    case 0x08: objIdx = MAPPIC_BONE2; break;
-                    case 0x09: objIdx = MAPPIC_FLOWERS; break;
-                    case 0x10: objIdx = MAPPIC_BUSH2; break;
-                    case 0x11: objIdx = MAPPIC_BUSH3; break;
-                    case 0x12: objIdx = MAPPIC_BUSH4; break;
-
-                    case 0x0A: objIdx = MAPPIC_BUSH1; break;
-
-                    case 0x0C: objIdx = MAPPIC_CACTUS1; break;
-                    case 0x0D: objIdx = MAPPIC_CACTUS2; break;
-                    case 0x0E: objIdx = MAPPIC_SHRUB1; break;
-                    case 0x0F: objIdx = MAPPIC_SHRUB2; break;
-
-                    case 0x13: objIdx = MAPPIC_SHRUB3; break;
-                    case 0x14: objIdx = MAPPIC_SHRUB4; break;
-
-                    case 0x16: objIdx = MAPPIC_DOOR; break;
-
-                    case 0x18: objIdx = MIS1BOBS_STONE1; break;
-                    case 0x19: objIdx = MIS1BOBS_STONE2; break;
-                    case 0x1A: objIdx = MIS1BOBS_STONE3; break;
-                    case 0x1B: objIdx = MIS1BOBS_STONE4; break;
-                    case 0x1C: objIdx = MIS1BOBS_STONE5; break;
-                    case 0x1D: objIdx = MIS1BOBS_STONE6; break;
-                    case 0x1E: objIdx = MIS1BOBS_STONE7; break;
-
-                    case 0x22: objIdx = MAPPIC_MUSHROOM3; break;
-
-                    case 0x25: objIdx = MAPPIC_PEBBLE1; break;
-                    case 0x26: objIdx = MAPPIC_PEBBLE2; break;
-                    case 0x27: objIdx = MAPPIC_PEBBLE3; break;
-                    default: break;
-                }
+            case 0xC9: // Note: 0xC9 is actually a bug and should be 0xC8, but the random map generator produced that
+                if(const LandscapeObject* landscapeObj = findLandscapeObject(P2.objectType))
+                    objIdx = landscapeObj->picture;
                 break;
             // stone
             case 0xCC: objIdx = MAPPIC_GRANITE_1_1 + (P2.objectType - 0x01); break;

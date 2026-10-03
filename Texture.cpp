@@ -204,9 +204,22 @@ void drawRect(const Rect& rect, unsigned color)
     glColor4f(1, 1, 1, 1);
 }
 
+namespace {
+std::vector<Texture> bmpTextureCache;
+} // namespace
+
+void resetBmpTextures(unsigned firstIdx, unsigned lastIdx)
+{
+    // no GL context anymore when the game is shutting down
+    if(!global::s2)
+        return;
+    for(unsigned idx = firstIdx; idx <= lastIdx && idx < bmpTextureCache.size(); idx++)
+        bmpTextureCache[idx] = Texture();
+}
+
 Texture& getBmpTexture(unsigned idx, bool filterLinear)
 {
-    static std::vector<Texture> cache;
+    auto& cache = bmpTextureCache;
     static std::vector<bool> linearFlags;
     if(idx >= global::bmpArray.size())
     {

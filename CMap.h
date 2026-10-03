@@ -207,6 +207,8 @@ private:
     //              X=16    X=17    X=18
     template<size_t T_size>
     void calculateVerticesAround(std::array<Point32, T_size>& newVertices, Position pos);
+    // true if the vertex is occupied by a ruined fortress next to it (west, north west or north east of it)
+    bool isPartOfRuinedFortress(Position pos);
     // this will setup the 'active' variable of each vertices depending on 'ChangeSection'
     void setupVerticesActivity();
     Position correctMouseBlit(Position vertexPos) const;

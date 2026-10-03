@@ -59,6 +59,11 @@ void CControlContainer::setMouseData(const SDL_MouseButtonEvent button)
     {
         selectbox->setMouseData(button);
     }
+    // only texts with a callback react on clicks
+    for(const auto& text : texts)
+    {
+        text->setMouseData(button);
+    }
 }
 
 void CControlContainer::setKeyboardData(const SDL_KeyboardEvent& key)
